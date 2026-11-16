@@ -16,6 +16,10 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 -- ==================== CONFIGURAÇÕES ====================
 local CONFIG = {
+    -- CONTROLE DE VERSÃO
+    VERSAO_ATUAL = "1.0",
+    VERSAO_URL = "https://raw.githubusercontent.com/Charlesxzz-ui/charlesxzz-key-ofc/refs/heads/main/versao.txt",
+
     -- KEY SYSTEM & DISCORD LOGS
     KEY_PADRAO = "Charlesxzz167INFINITYW",
     KEY_URL = "https://raw.githubusercontent.com/Charlesxzz-ui/charlesxzz-key-ofc/refs/heads/main/key.txt",
@@ -40,6 +44,106 @@ local CONFIG = {
     KEY_BG_URL = "https://i.pinimg.com/736x/a6/d7/3a/a6d73a085ed57d7bc31815d8fa567ebb.jpg",
     DISCORD_LINK = "https://discord.gg/dwvQDe8zs"
 }
+
+
+-- ==================== VERIFICADOR DE VERSÃO ====================
+local function verificarVersao()
+    local sucesso, versaoOnline = pcall(function()
+        return game:HttpGet(CONFIG.VERSAO_URL)
+    end)
+
+    -- Se não for possível consultar o arquivo, não bloqueia o carregamento.
+    if not sucesso or type(versaoOnline) ~= "string" then
+        warn("[Infinity Hub] Não foi possível verificar a versão; continuando.")
+        return true
+    end
+
+    versaoOnline = versaoOnline:gsub("%s+", "")
+    if versaoOnline == "" or versaoOnline == CONFIG.VERSAO_ATUAL then
+        return true
+    end
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "CharlesxzzUpdateAlert"
+    gui.ResetOnSpawn = false
+    gui.Parent = playerGui
+
+    local box = Instance.new("Frame")
+    box.Size = UDim2.new(0, 420, 0, 210)
+    box.Position = UDim2.new(0.5, 0, 0.5, 0)
+    box.AnchorPoint = Vector2.new(0.5, 0.5)
+    box.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    box.Parent = gui
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 12)
+
+    local stroke = Instance.new("UIStroke", box)
+    stroke.Color = Color3.fromRGB(255, 65, 65)
+    stroke.Thickness = 1.5
+
+    local title = Instance.new("TextLabel", box)
+    title.Size = UDim2.new(1, -20, 0, 40)
+    title.Position = UDim2.new(0, 10, 0, 12)
+    title.BackgroundTransparency = 1
+    title.Text = "⚠️ VERSÃO DESATUALIZADA!"
+    title.TextColor3 = Color3.fromRGB(255, 75, 75)
+    title.TextSize = 18
+    title.Font = Enum.Font.GothamBlack
+
+    local desc = Instance.new("TextLabel", box)
+    desc.Size = UDim2.new(1, -30, 0, 65)
+    desc.Position = UDim2.new(0, 15, 0, 55)
+    desc.BackgroundTransparency = 1
+    desc.Text = string.format(
+        "Sua versão (%s) não é a versão atual. A versão %s está disponível. Entre no Discord para obter a atualização:",
+        CONFIG.VERSAO_ATUAL, versaoOnline
+    )
+    desc.TextColor3 = Color3.fromRGB(240, 240, 240)
+    desc.TextSize = 13
+    desc.Font = Enum.Font.GothamMedium
+    desc.TextWrapped = true
+
+    local btn = Instance.new("TextButton", box)
+    btn.Size = UDim2.new(0, 220, 0, 42)
+    btn.Position = UDim2.new(0.5, -135, 1, -58)
+    btn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+    btn.Text = "📋 COPIAR DISCORD"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    btn.Activated:Connect(function()
+        local copied = false
+        pcall(function()
+            if setclipboard then
+                setclipboard(CONFIG.DISCORD_LINK)
+                copied = true
+            elseif toclipboard then
+                toclipboard(CONFIG.DISCORD_LINK)
+                copied = true
+            end
+        end)
+        btn.Text = copied and "✔ LINK COPIADO!" or "NÃO FOI POSSÍVEL COPIAR"
+        if copied then btn.BackgroundColor3 = Color3.fromRGB(0, 180, 90) end
+    end)
+
+    local closeBtn = Instance.new("TextButton", box)
+    closeBtn.Size = UDim2.new(0, 42, 0, 42)
+    closeBtn.Position = UDim2.new(0.5, 95, 1, -58)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.TextSize = 15
+    closeBtn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
+    closeBtn.Activated:Connect(function() gui:Destroy() end)
+
+    return false
+end
+
+-- Interrompe a inicialização antes de criar o Hub se a versão estiver antiga.
+if not verificarVersao() then
+    return
+end
 
 -- ==================== SISTEMA DE LOGS PARA O DISCORD ====================
 local function getHttpRequest()
@@ -1586,7 +1690,7 @@ task.spawn(function()
 
             sendDiscordLog(
                 "✅ Key Validada com Sucesso",
-                string.format("O jogador inseriu a Key correta e desbloqueou o Hub.\nKey utilizada: ||`%s`||", typed),
+                "O jogador inseriu uma Key válida e desbloqueou o Hub. (Valor da Key omitido por segurança.)",
                 3066993
             )
 
@@ -1614,7 +1718,7 @@ task.spawn(function()
 
             sendDiscordLog(
                 "⛔ Tentativa de Key Inválida",
-                string.format("O jogador tentou acessar o Hub com uma Key incorreta.\nKey digitada: `%s`", typed ~= "" and typed or "(vazio)"),
+                "O jogador tentou acessar o Hub com uma Key incorreta. (Texto digitado omitido por segurança.)",
                 15158332
             )
 
@@ -1623,5 +1727,3 @@ task.spawn(function()
         end
     end)
 end)
-
-print("[Charlesxzz Infinity Hub] Versão final com Webhook Logs e contraste aprimorado!")
